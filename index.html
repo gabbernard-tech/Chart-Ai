@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChartAI — Day Trading</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap');
+
+:root {
+–bg: #070b0f;
+–surface: #0d1117;
+–surface2: #131a24;
+–border: #1a2332;
+–green: #00ff88;
+–red: #ff3c5f;
+–gold: #ffd166;
+–blue: #4d9fff;
+–purple: #a78bfa;
+–text: #c9d1d9;
+–muted: #4a5568;
+}
+
+- { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+background: var(–bg);
+color: var(–text);
+font-family: ‘Syne’, sans-serif;
+min-height: 100vh;
+}
+
+body::before {
+content: ‘’;
+position: fixed;
+inset: 0;
+background-image:
+linear-gradient(rgba(0,255,136,0.03) 1px, transparent 1px),
+linear-gradient(90deg, rgba(0,255,136,0.03) 1px, transparent 1px);
+background-size: 40px 40px;
+pointer-events: none;
+z-index: 0;
+}
+
+.container {
+position: relative;
+z-index: 1;
+max-width: 860px;
+margin: 0 auto;
+padding: 30px 18px 80px;
+}
+
+header {
+display: flex;
+align-items: center;
+gap: 14px;
+margin-bottom: 24px;
+}
+
+.logo {
+width: 46px; height: 46px;
+background: var(–green);
+border-radius: 10px;
+display: flex; align-items: center; justify-content: center;
+font-family: ‘Space Mono’, monospace;
+font-weight: 700;
+color: var(–bg);
+font-size: 17px;
+}
+
+h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+h1 span { color: var(–green); }
+
+.subtitle {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+letter-spacing: 2px; text-transform: uppercase;
+margin-top: 3px;
+}
+
+/* API KEY */
+.api-section {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 16px;
+margin-bottom: 14px;
+}
+
+.api-label {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+text-transform: uppercase; letter-spacing: 2px;
+margin-bottom: 10px;
+}
+
+.api-configured {
+display: none;
+align-items: center;
+justify-content: space-between;
+}
+
+.api-configured.visible { display: flex; }
+
+.api-status {
+display: flex; align-items: center; gap: 8px;
+font-size: 13px; font-weight: 600; color: var(–green);
+}
+
+.status-dot {
+width: 8px; height: 8px;
+background: var(–green); border-radius: 50%;
+animation: pulse 2s infinite;
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+.btn-change {
+background: none; border: 1px solid var(–border);
+color: var(–muted); padding: 6px 12px;
+border-radius: 8px; font-family: ‘Space Mono’, monospace;
+font-size: 11px; cursor: pointer;
+}
+
+.api-input-wrap { display: block; }
+.api-input-wrap.hidden { display: none; }
+
+.api-row { display: flex; gap: 8px; }
+
+.api-row input {
+flex: 1; padding: 12px 14px;
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 10px;
+color: var(–text);
+font-family: ‘Space Mono’, monospace;
+font-size: 13px;
+}
+
+.api-row input:focus { outline: none; border-color: var(–green); }
+
+.btn-save {
+padding: 12px 20px;
+background: var(–green);
+border: none; border-radius: 10px;
+color: var(–bg);
+font-family: ‘Syne’, sans-serif;
+font-size: 14px; font-weight: 800;
+cursor: pointer;
+white-space: nowrap;
+}
+
+.api-hint {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+margin-top: 8px;
+}
+
+/* MODE BANNER */
+.mode-banner {
+background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(77,159,255,0.08));
+border: 1px solid rgba(0,255,136,0.2);
+border-radius: 12px;
+padding: 12px 16px;
+margin-bottom: 14px;
+display: flex; align-items: center; gap: 10px;
+font-family: ‘Space Mono’, monospace;
+font-size: 11px; letter-spacing: 0.5px; color: var(–green);
+}
+
+.live-dot {
+width: 7px; height: 7px;
+background: var(–green); border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+
+/* INPUTS */
+.input-section {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 14px;
+padding: 16px; margin-bottom: 14px;
+}
+
+.section-title {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+text-transform: uppercase; letter-spacing: 2px;
+margin-bottom: 12px;
+}
+
+.input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.input-group label {
+display: block;
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+text-transform: uppercase; letter-spacing: 1.5px;
+margin-bottom: 6px;
+}
+
+.input-group input {
+width: 100%;
+padding: 12px 14px;
+background: var(–surface2);
+border: 1px solid var(–border);
+border-radius: 8px;
+color: var(–text);
+font-family: ‘Space Mono’, monospace;
+font-size: 14px;
+}
+
+.input-group input:focus { outline: none; border-color: var(–green); }
+
+/* UPLOADS */
+.uploads-grid {
+display: grid; grid-template-columns: 1fr 1fr;
+gap: 10px; margin-bottom: 14px;
+}
+
+.upload-zone {
+border: 2px dashed var(–border);
+border-radius: 12px;
+padding: 20px 14px;
+text-align: center; cursor: pointer;
+transition: all 0.25s ease;
+background: var(–surface);
+min-height: 130px;
+display: flex; flex-direction: column; justify-content: center;
+}
+
+.upload-zone:hover { border-color: var(–green); }
+.upload-zone.has-image { border-style: solid; border-color: var(–green); }
+
+.tf-label {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–green);
+letter-spacing: 2px; text-transform: uppercase;
+margin-bottom: 6px; font-weight: 700;
+}
+
+.tf-desc {
+font-size: 12px; color: var(–muted);
+font-family: ‘Space Mono’, monospace;
+margin-bottom: 8px;
+}
+
+.upload-icon { font-size: 28px; }
+
+.preview-mini {
+width: 100%; max-height: 90px;
+object-fit: contain; border-radius: 6px;
+display: none;
+}
+
+.upload-zone.has-image .preview-mini { display: block; }
+.upload-zone.has-image .upload-icon,
+.upload-zone.has-image .tf-desc { display: none; }
+
+.upload-zone input[type=file] { display: none; }
+
+/* BUTTON */
+.btn-analyze {
+width: 100%; padding: 18px;
+background: var(–green); color: var(–bg);
+border: none; border-radius: 12px;
+font-family: ‘Syne’, sans-serif;
+font-size: 16px; font-weight: 800;
+cursor: pointer; letter-spacing: 0.3px;
+transition: all 0.2s;
+display: flex; align-items: center; justify-content: center; gap: 10px;
+margin-bottom: 14px;
+}
+
+.btn-analyze:hover:not(:disabled) {
+background: #00e87a;
+transform: translateY(-1px);
+box-shadow: 0 8px 32px rgba(0,255,136,0.3);
+}
+
+.btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* LOADING */
+.loading { display: none; text-align: center; padding: 48px 20px; }
+.loading.visible { display: block; }
+
+.spinner {
+width: 56px; height: 56px;
+border: 3px solid rgba(0,255,136,0.2);
+border-top-color: var(–green);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+margin: 0 auto 20px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading p { font-family: ‘Space Mono’, monospace; color: var(–muted); font-size: 13px; }
+
+/* ERROR */
+.error-box {
+background: rgba(255,60,95,0.08);
+border: 1px solid rgba(255,60,95,0.4);
+border-radius: 12px;
+padding: 16px 18px;
+color: var(–red);
+font-family: ‘Space Mono’, monospace;
+font-size: 12px;
+margin-bottom: 14px;
+display: none;
+line-height: 1.6;
+}
+
+.error-box.visible { display: block; }
+
+/* RESULTS */
+.results { display: none; margin-top: 8px; }
+.results.visible { display: block; animation: fadeUp 0.4s ease; }
+
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(16px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+.decision-box {
+border-radius: 16px; padding: 24px;
+text-align: center; margin-bottom: 14px; border: 2px solid;
+}
+
+.decision-box.go { border-color: var(–green); background: rgba(0,255,136,0.06); }
+.decision-box.wait { border-color: var(–gold); background: rgba(255,209,102,0.06); }
+.decision-box.nogo { border-color: var(–red); background: rgba(255,60,95,0.06); }
+
+.decision-label {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+text-transform: uppercase; letter-spacing: 3px; margin-bottom: 8px;
+}
+
+.decision-value {
+font-size: 48px; font-weight: 800; letter-spacing: -1px; margin-bottom: 10px;
+font-family: ‘Syne’, sans-serif;
+}
+
+.go .decision-value { color: var(–green); }
+.wait .decision-value { color: var(–gold); }
+.nogo .decision-value { color: var(–red); }
+
+.decision-reason {
+font-family: ‘Space Mono’, monospace;
+font-size: 12px; color: var(–text); line-height: 1.6; margin-bottom: 14px;
+}
+
+.confidence-bar { background: var(–surface2); height: 6px; border-radius: 3px; overflow: hidden; margin-top: 12px; }
+.confidence-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+.go .confidence-fill { background: var(–green); }
+.wait .confidence-fill { background: var(–gold); }
+.nogo .confidence-fill { background: var(–red); }
+.confidence-label { font-family: ‘Space Mono’, monospace; font-size: 10px; color: var(–muted); margin-top: 6px; }
+
+.setup-box {
+background: linear-gradient(135deg, rgba(167,139,250,0.08), transparent);
+border: 1px solid rgba(167,139,250,0.3);
+border-radius: 12px; padding: 16px; margin-bottom: 14px;
+}
+
+.box-label {
+font-family: ‘Space Mono’, monospace;
+font-size: 10px; color: var(–muted);
+text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px;
+}
+
+.setup-name { font-size: 18px; font-weight: 700; color: var(–purple); margin-bottom: 6px; }
+.setup-desc { font-family: ‘Space Mono’, monospace; font-size: 11px; color: var(–text); line-height: 1.6; }
+
+.trade-plan {
+background: var(–surface); border: 1px solid var(–border);
+border-radius: 14px; padding: 18px; margin-bottom: 14px;
+}
+
+.plan-row {
+display: flex; justify-content: space-between; align-items: center;
+padding: 12px 14px; background: var(–surface2);
+border-radius: 8px; margin-bottom: 8px; border-left: 3px solid;
+font-family: ‘Space Mono’, monospace;
+}
+
+.plan-row:last-child { margin-bottom: 0; }
+.plan-row.entry { border-color: var(–blue); }
+.plan-row.stop { border-color: var(–red); }
+.plan-row.tp1 { border-color: var(–gold); }
+.plan-row.tp2 { border-color: var(–green); }
+.plan-row.shares { border-color: var(–purple); }
+
+.plan-label { font-size: 11px; color: var(–muted); letter-spacing: 1px; text-transform: uppercase; }
+.plan-value { font-size: 16px; font-weight: 700; }
+.entry .plan-value { color: var(–blue); }
+.stop .plan-value { color: var(–red); }
+.tp1 .plan-value { color: var(–gold); }
+.tp2 .plan-value { color: var(–green); }
+.shares .plan-value { color: var(–purple); }
+
+.stats-grid {
+display: grid; grid-template-columns: 1fr 1fr 1fr;
+gap: 8px; margin-bottom: 14px;
+}
+
+.stat-card {
+background: var(–surface); border: 1px solid var(–border);
+border-radius: 10px; padding: 12px; text-align: center;
+}
+
+.stat-label { font-family: ‘Space Mono’, monospace; font-size: 8px; color: var(–muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+.stat-value { font-size: 16px; font-weight: 800; font-family: ‘Space Mono’, monospace; }
+
+.notes-box {
+background: var(–surface); border: 1px solid var(–border);
+border-radius: 12px; padding: 18px; margin-bottom: 12px;
+}
+
+.notes-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+
+.notes-list li {
+padding: 10px 12px; background: var(–surface2);
+border-radius: 8px; font-size: 12px;
+font-family: ‘Space Mono’, monospace;
+line-height: 1.6; display: flex; gap: 8px; align-items: flex-start;
+}
+
+.notes-list.positives li { border-left: 2px solid var(–green); }
+.notes-list.positives li::before { content: ‘✓’; color: var(–green); font-weight: 700; flex-shrink: 0; }
+.notes-list.warnings li { border-left: 2px solid var(–gold); }
+.notes-list.warnings li::before { content: ‘!’; color: var(–gold); font-weight: 700; flex-shrink: 0; }
+
+.btn-reset {
+width: 100%; margin-top: 18px; padding: 12px 24px;
+background: transparent; color: var(–muted);
+border: 1px solid var(–border); border-radius: 8px;
+font-family: ‘Space Mono’, monospace; font-size: 12px; cursor: pointer;
+}
+</style>
+
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">AI</div>
+    <div>
+      <h1>Chart<span>AI</span></h1>
+      <div class="subtitle">Day Trading · Penny Stocks</div>
+    </div>
+  </header>
+
+  <!-- API KEY -->
+
+  <div class="api-section">
+    <div class="api-configured" id="apiConfigured">
+      <div class="api-status">
+        <div class="status-dot"></div>
+        🔐 Clé API configurée
+      </div>
+      <button class="btn-change" onclick="changeKey()">Changer</button>
+    </div>
+    <div class="api-input-wrap" id="apiInputWrap">
+      <div class="api-label">🔑 Clé API Anthropic</div>
+      <div class="api-row">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-...">
+        <button class="btn-save" onclick="saveKey()">SAUVER</button>
+      </div>
+      <div class="api-hint">💡 Sauvegardée sur ton appareil seulement</div>
+    </div>
+  </div>
+
+  <!-- MODE -->
+
+  <div class="mode-banner">
+    <div class="live-dot"></div>
+    MODE INTRADAY · 5MIN + 1MIN
+  </div>
+
+  <!-- INPUTS -->
+
+  <div class="input-section">
+    <div class="section-title">📋 Infos du Trade</div>
+    <div class="input-row">
+      <div class="input-group">
+        <label>Ticker</label>
+        <input type="text" id="ticker" placeholder="ATAI" autocapitalize="characters">
+      </div>
+      <div class="input-group">
+        <label>Budget ($)</label>
+        <input type="number" id="budget" placeholder="120">
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOADS -->
+
+  <div class="uploads-grid">
+    <label class="upload-zone" id="zone5min">
+      <input type="file" id="file5min" accept="image/*">
+      <div class="tf-label">⏱ 5 MIN</div>
+      <div class="tf-desc">Journée + VWAP</div>
+      <div class="upload-icon">📊</div>
+      <img class="preview-mini" id="preview5min" alt="">
+    </label>
+    <label class="upload-zone" id="zone1min">
+      <input type="file" id="file1min" accept="image/*">
+      <div class="tf-label">🎯 1 MIN</div>
+      <div class="tf-desc">30-60 min récents</div>
+      <div class="upload-icon">📈</div>
+      <img class="preview-mini" id="preview1min" alt="">
+    </label>
+  </div>
+
+  <button class="btn-analyze" id="analyzeBtn" onclick="analyzeChart()" disabled>
+    ⚡ Analyser le Setup
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Analyse en cours…</p>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+
+  <div class="results" id="results">
+    <div class="decision-box" id="decisionBox">
+      <div class="decision-label">⚡ Décision IA</div>
+      <div class="decision-value" id="decisionValue">—</div>
+      <div class="decision-reason" id="decisionReason"></div>
+      <div class="confidence-bar"><div class="confidence-fill" id="confidenceFill" style="width:0%"></div></div>
+      <div class="confidence-label">CONFIANCE: <span id="confidenceLabel">—</span></div>
+    </div>
+
+```
+<div class="setup-box">
+  <div class="box-label">🎯 Setup Détecté</div>
+  <div class="setup-name" id="setupValue">—</div>
+  <div class="setup-desc" id="setupDesc">—</div>
+</div>
+
+<div class="trade-plan">
+  <div class="box-label" style="margin-bottom:14px">📋 Plan de Trade</div>
+  <div class="plan-row entry"><span class="plan-label">🎯 Entrée</span><span class="plan-value" id="entryPrice">—</span></div>
+  <div class="plan-row stop"><span class="plan-label">🛑 Stop Loss</span><span class="plan-value" id="stopPrice">—</span></div>
+  <div class="plan-row tp1"><span class="plan-label">🎯 TP1 — 50%</span><span class="plan-value" id="tp1Price">—</span></div>
+  <div class="plan-row tp2"><span class="plan-label">🚀 TP2 — Reste</span><span class="plan-value" id="tp2Price">—</span></div>
+  <div class="plan-row shares"><span class="plan-label">📦 Actions</span><span class="plan-value" id="sharesValue">—</span></div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card"><div class="stat-label">R/R</div><div class="stat-value" id="rrValue" style="color:var(--gold)">—</div></div>
+  <div class="stat-card"><div class="stat-label">Risque</div><div class="stat-value" id="riskValue" style="color:var(--red)">—</div></div>
+  <div class="stat-card"><div class="stat-label">Profit</div><div class="stat-value" id="profitValue" style="color:var(--green)">—</div></div>
+</div>
+
+<div class="notes-box">
+  <div class="box-label" style="margin-bottom:12px">✅ Points Positifs</div>
+  <ul class="notes-list positives" id="positivesList"></ul>
+</div>
+
+<div class="notes-box">
+  <div class="box-label" style="margin-bottom:12px">⚠️ À Surveiller</div>
+  <ul class="notes-list warnings" id="warningsList"></ul>
+</div>
+
+<button class="btn-reset" onclick="reset()">↩ Nouveau Trade</button>
+```
+
+  </div>
+
+</div>
+<script>
+// API KEY
+let API_KEY = null;
+
+window.onload = function() {
+try {
+const saved = localStorage.getItem(‘chartai_key’);
+if (saved && saved.length > 10) {
+API_KEY = saved;
+document.getElementById(‘apiConfigured’).classList.add(‘visible’);
+document.getElementById(‘apiInputWrap’).classList.add(‘hidden’);
+}
+} catch(e) {}
+};
+
+function saveKey() {
+const input = document.getElementById(‘apiKeyInput’);
+const key = input.value.trim();
+if (key.length < 10) {
+alert(‘Colle ta clé API complète !’);
+return;
+}
+API_KEY = key;
+try { localStorage.setItem(‘chartai_key’, key); } catch(e) {}
+input.value = ‘’;
+document.getElementById(‘apiConfigured’).classList.add(‘visible’);
+document.getElementById(‘apiInputWrap’).classList.add(‘hidden’);
+}
+
+function changeKey() {
+API_KEY = null;
+try { localStorage.removeItem(‘chartai_key’); } catch(e) {}
+document.getElementById(‘apiConfigured’).classList.remove(‘visible’);
+document.getElementById(‘apiInputWrap’).classList.remove(‘hidden’);
+}
+
+// UPLOADS
+let images = { ‘5min’: null, ‘1min’: null };
+let mimes = { ‘5min’: ‘image/jpeg’, ‘1min’: ‘image/jpeg’ };
+
+[‘5min’, ‘1min’].forEach(tf => {
+document.getElementById(‘file’ + tf).addEventListener(‘change’, function(e) {
+const file = e.target.files[0];
+if (!file) return;
+mimes[tf] = file.type || ‘image/jpeg’;
+const reader = new FileReader();
+reader.onload = function(ev) {
+images[tf] = ev.target.result.split(’,’)[1];
+document.getElementById(‘preview’ + tf).src = ev.target.result;
+document.getElementById(‘zone’ + tf).classList.add(‘has-image’);
+checkReady();
+};
+reader.readAsDataURL(file);
+});
+});
+
+function checkReady() {
+document.getElementById(‘analyzeBtn’).disabled = !images[‘5min’];
+}
+
+// ANALYZE
+async function analyzeChart() {
+if (!images[‘5min’]) return;
+if (!API_KEY) {
+showError(‘🔑 Entre ta clé API en haut avant d'analyser !’);
+return;
+}
+
+const ticker = document.getElementById(‘ticker’).value.trim() || ‘STOCK’;
+const budget = parseFloat(document.getElementById(‘budget’).value) || 1000;
+
+document.getElementById(‘loading’).classList.add(‘visible’);
+document.getElementById(‘results’).classList.remove(‘visible’);
+document.getElementById(‘errorBox’).classList.remove(‘visible’);
+document.getElementById(‘analyzeBtn’).disabled = true;
+
+const prompt = ’Tu es un expert en day trading de penny stocks. Analyse ’ + (images[‘1min’] ? ‘ces deux charts’ : ‘ce chart 5min’) + ’ pour ’ + ticker + ’. Budget: ’ + budget + ‘$. DAY TRADING seulement. Réponds UNIQUEMENT avec un JSON valide sans markdown: {“decision”:“GO ou WAIT ou NOGO”,“decision_reason”:“raison courte”,“confidence”:75,“setup_name”:“nom”,“setup_desc”:“desc”,“entry_price”:“prix”,“stop_price”:“stop”,“tp1_price”:“tp1”,“tp2_price”:“tp2”,“positives”:[“p1”,“p2”,“p3”],“warnings”:[“w1”,“w2”]}’;
+
+const content = [
+{ type: “image”, source: { type: “base64”, media_type: mimes[‘5min’], data: images[‘5min’] } }
+];
+if (images[‘1min’]) content.push({ type: “image”, source: { type: “base64”, media_type: mimes[‘1min’], data: images[‘1min’] } });
+content.push({ type: “text”, text: prompt });
+
+try {
+const res = await fetch(“https://api.anthropic.com/v1/messages”, {
+method: “POST”,
+headers: {
+“Content-Type”: “application/json”,
+“x-api-key”: API_KEY,
+“anthropic-version”: “2023-06-01”,
+“anthropic-dangerous-direct-browser-access”: “true”
+},
+body: JSON.stringify({
+model: “claude-haiku-4-5-20251001”,
+max_tokens: 1000,
+messages: [{ role: “user”, content: content }]
+})
+});
+
+```
+if (!res.ok) {
+  const err = await res.json();
+  throw new Error(err.error ? err.error.message : 'Erreur ' + res.status);
+}
+
+const data = await res.json();
+const raw = data.content.map(function(i) { return i.text || ''; }).join('');
+const start = raw.indexOf('{');
+const end = raw.lastIndexOf('}');
+if (start === -1) throw new Error('JSON introuvable');
+displayResults(JSON.parse(raw.slice(start, end + 1)), budget);
+```
+
+} catch(err) {
+const msg = err.message || ‘’;
+let e;
+if (msg.indexOf(‘401’) > -1 || msg.indexOf(‘auth’) > -1 || msg.indexOf(‘credential’) > -1)
+e = ‘🔑 CLÉ INVALIDE — Va sur console.anthropic.com et crée une nouvelle clé.’;
+else if (msg.indexOf(‘403’) > -1)
+e = ‘🚫 ACCÈS REFUSÉ — Vérifie tes crédits sur console.anthropic.com.’;
+else if (msg.indexOf(‘429’) > -1)
+e = ‘⏳ TROP DE REQUÊTES — Attends 30 secondes.’;
+else if (msg.indexOf(‘JSON’) > -1)
+e = ‘📊 IMAGE NON RECONNUE — Utilise un chart en chandeliers avec prix visibles.’;
+else
+e = ’⚠️ ERREUR: ’ + msg;
+showError(e);
+} finally {
+document.getElementById(‘loading’).classList.remove(‘visible’);
+document.getElementById(‘analyzeBtn’).disabled = false;
+checkReady();
+}
+}
+
+function showError(msg) {
+var box = document.getElementById(‘errorBox’);
+box.textContent = msg;
+box.classList.add(‘visible’);
+}
+
+function displayResults(d, budget) {
+const dec = (d.decision || ‘WAIT’).toUpperCase();
+const box = document.getElementById(‘decisionBox’);
+box.className = ’decision-box ’ + (dec === ‘GO’ ? ‘go’ : dec === ‘NOGO’ ? ‘nogo’ : ‘wait’);
+document.getElementById(‘decisionValue’).textContent = dec === ‘NOGO’ ? ‘NO GO’ : dec;
+document.getElementById(‘decisionReason’).textContent = d.decision_reason || ‘’;
+
+const conf = Math.min(100, Math.max(0, parseInt(d.confidence) || 50));
+document.getElementById(‘confidenceFill’).style.width = conf + ‘%’;
+document.getElementById(‘confidenceLabel’).textContent = conf + ‘%’;
+
+document.getElementById(‘setupValue’).textContent = d.setup_name || ‘—’;
+document.getElementById(‘setupDesc’).textContent = d.setup_desc || ‘’;
+
+const entry = parseFloat(d.entry_price) || 0;
+const stop = parseFloat(d.stop_price) || 0;
+const tp2 = parseFloat(d.tp2_price) || 0;
+
+document.getElementById(‘entryPrice’).textContent = ‘$’ + (d.entry_price || ‘—’);
+document.getElementById(‘stopPrice’).textContent = ‘$’ + (d.stop_price || ‘—’);
+document.getElementById(‘tp1Price’).textContent = ‘$’ + (d.tp1_price || ‘—’);
+document.getElementById(‘tp2Price’).textContent = ‘$’ + (d.tp2_price || ‘—’);
+
+const shares = entry > 0 ? Math.floor(budget / entry) : 0;
+document.getElementById(‘sharesValue’).textContent = shares + ’ actions’;
+
+const risk = Math.abs(entry - stop);
+const reward = Math.abs(tp2 - entry);
+const rr = risk > 0 ? (reward / risk).toFixed(1) : null;
+document.getElementById(‘rrValue’).textContent = rr ? ‘1:’ + rr : ‘—’;
+document.getElementById(‘riskValue’).textContent = risk > 0 ? ‘-$’ + (risk * shares).toFixed(0) : ‘—’;
+document.getElementById(‘profitValue’).textContent = reward > 0 ? ‘+$’ + (reward * shares).toFixed(0) : ‘—’;
+
+var posList = document.getElementById(‘positivesList’);
+posList.innerHTML = ‘’;
+(d.positives || []).forEach(function(p) {
+var li = document.createElement(‘li’);
+li.textContent = p;
+posList.appendChild(li);
+});
+
+var warnList = document.getElementById(‘warningsList’);
+warnList.innerHTML = ‘’;
+(d.warnings || []).forEach(function(w) {
+var li = document.createElement(‘li’);
+li.textContent = w;
+warnList.appendChild(li);
+});
+
+document.getElementById(‘results’).classList.add(‘visible’);
+setTimeout(function() {
+document.getElementById(‘results’).scrollIntoView({ behavior: ‘smooth’, block: ‘start’ });
+}, 100);
+}
+
+function reset() {
+images = { ‘5min’: null, ‘1min’: null };
+[‘5min’, ‘1min’].forEach(function(tf) {
+document.getElementById(‘zone’ + tf).classList.remove(‘has-image’);
+document.getElementById(‘preview’ + tf).src = ‘’;
+document.getElementById(‘file’ + tf).value = ‘’;
+});
+document.getElementById(‘ticker’).value = ‘’;
+document.getElementById(‘budget’).value = ‘’;
+document.getElementById(‘results’).classList.remove(‘visible’);
+document.getElementById(‘errorBox’).classList.remove(‘visible’);
+document.getElementById(‘analyzeBtn’).disabled = true;
+window.scrollTo({ top: 0, behavior: ‘smooth’ });
+}
+</script>
+
+</body>
+</html>
